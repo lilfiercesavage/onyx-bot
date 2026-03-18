@@ -9,7 +9,7 @@ const activateUser = (telegramId) => {
     const stmt = db.prepare(`
       INSERT INTO users (telegram_id, status, trial_start, sub_expiry) 
       VALUES (?, 'active', ?, ?)
-      ON CONFLICT(telegram_id) DO NOTHING
+      ON CONFLICT(telegram_id) DO UPDATE SET status = 'active', trial_start = excluded.trial_start, sub_expiry = excluded.sub_expiry
     `);
 
     stmt.run([telegramId, now.toISOString(), expiry.toISOString()], function (err) {
