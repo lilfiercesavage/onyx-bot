@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Alpha Terminal</title>
+    <script src="https://cdn.jsdelivr.net/npm/@telegram-apps/sdk@2"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚀 Alpha Terminal</h1>
+            <p class="subtitle">DeFi Intelligence Layer</p>
+        </header>
+
+        <div class="status-card" id="statusCard">
+            <div class="status-header">
+                <span class="status-dot" id="statusDot"></span>
+                <span id="statusText">Loading...</span>
+            </div>
+            <div class="status-details">
+                <p>Type: <span id="subType">-</span></p>
+                <p>Expires: <span id="expiryDate">-</span></p>
+                <p>Gems Found: <span id="gemsCount">-</span></p>
+            </div>
+        </div>
+
+        <div class="gems-section">
+            <h2>🔎 Recent Gems</h2>
+            <div id="gemsList" class="gems-list">
+                <div class="loading">Scanning for gems...</div>
+            </div>
+        </div>
+
+        <div class="actions">
+            <button class="btn-primary" id="refreshBtn">🔄 Refresh</button>
+            <button class="btn-secondary" id="upgradeBtn">💎 Upgrade to Pro</button>
+        </div>
+
+        <footer>
+            <p>Signal Score = (Liquidity×0.5 + Volume×0.3 + Txs×0.2) × Safety</p>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
