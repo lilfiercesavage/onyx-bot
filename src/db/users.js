@@ -1,21 +1,20 @@
 const db = require('./database');
 
-// Give user 14 days trial by default
-const activateTrial = (telegramId) => {
+const activateUser = (telegramId) => {
   return new Promise((resolve, reject) => {
-    const trialStart = new Date();
+    const now = new Date();
     const expiry = new Date();
-    expiry.setDate(trialStart.getDate() + 14);
+    expiry.setFullYear(expiry.getFullYear() + 10);
 
     const stmt = db.prepare(`
       INSERT INTO users (telegram_id, status, trial_start, sub_expiry) 
-      VALUES (?, 'trial', ?, ?)
+      VALUES (?, 'active', ?, ?)
       ON CONFLICT(telegram_id) DO NOTHING
     `);
 
-    stmt.run([telegramId, trialStart.toISOString(), expiry.toISOString()], function (err) {
+    stmt.run([telegramId, now.toISOString(), expiry.toISOString()], function (err) {
       if (err) reject(err);
-      else resolve({ newTrialSetup: this.changes > 0 });
+      else resolve({ newUserSetup: this.changes > 0 });
     });
   });
 };

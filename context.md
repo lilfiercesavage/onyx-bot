@@ -17,5 +17,5 @@ Build a $0-overhead intelligence bot that identifies, filters, and summarizes hi
 3. **Signal Score Formula:** $Signal\_Score = ((Liquidity \times 0.5) + (Volume_{1hr} \times 0.3) + (Social\_Growth \times 0.2)) \times M_{safe}$
 
 ## Monetization & Access Control
-- 14-day "Free Alpha" trial period, followed by a $150/mo B2B subscription.
+- Free access for all users (no trial period), $150/mo B2B subscription available.
 - Middleware must automatically block API access if `current_date > expiry_date` in the SQLite user table.

@@ -1,5 +1,6 @@
 const { Telegraf } = require('telegraf');
 const dbUsers = require('../db/users');
+const { checkAccess } = require('../db/users');
 require('dotenv').config();
 
 const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
@@ -7,10 +8,10 @@ const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
 bot.start(async (ctx) => {
     try {
         const userId = ctx.from.id;
-        const result = await dbUsers.activateTrial(userId);
+        const result = await dbUsers.activateUser(userId);
         
-        if (result.newTrialSetup) {
-            ctx.reply("Welcome to DeFi Intelligence Layer! 🚀\nYour 14-day Free Alpha trial has started. You will receive High-Potential Gems as they are discovered.");
+        if (result.newUserSetup) {
+            ctx.reply("Welcome to DeFi Intelligence Layer! 🚀\nYour account is now active. You will receive High-Potential Gems as they are discovered.");
         } else {
             const access = await dbUsers.checkAccess(userId);
             if (access.hasAccess) {
