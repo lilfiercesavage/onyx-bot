@@ -23,14 +23,15 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 let recentGems = [];
 
-app.get('/api/status/:userId', async (req, res) => {
+app.get('/api/ping', (req, res) => {
+    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
     try {
         const userId = parseInt(req.params.userId);
         
         let access = await dbUsers.checkAccess(userId);
         
         if (!access.hasAccess && access.reason === 'Not registered') {
-            await dbUsers.activateTrial(userId);
             access = await dbUsers.checkAccess(userId);
         }
         
