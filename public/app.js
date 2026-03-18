@@ -14,6 +14,51 @@ const formatNumber = (num) => {
     return '$' + (num || 0).toFixed(0);
 };
 
+const loadLeaderboard = async () => {
+    const leaderboardList = document.getElementById('leaderboardList');
+
+    try {
+        const response = await fetch('/api/leaderboard');
+        const data = await response.json();
+
+        if (!data.leaderboard || data.leaderboard.length === 0) {
+            leaderboardList.innerHTML = '<div class="loading">No tokens called yet</div>';
+            return;
+        }
+
+        leaderboardList.innerHTML = data.leaderboard.slice(0, 10).map((token, index) => {
+            const isTop = index === 0;
+            const emoji = isTop ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`;
+            const multiplierColor = token.multiplier >= 2 ? 'multiplier-high' : token.multiplier >= 1 ? 'multiplier-mid' : 'multiplier-low';
+            
+            return `
+                <div class="leaderboard-item ${isTop ? 'top-gold' : ''}">
+                    <div class="lb-rank">${emoji}</div>
+                    <div class="lb-info">
+                        <div class="lb-address">${token.address.slice(0, 6)}...${token.address.slice(-4)}</div>
+                        <div class="lb-multiplier">
+                            <span class="${multiplierColor}">${token.multiplier.toFixed(2)}x</span>
+                            🚀
+                        </div>
+                    </div>
+                    <div class="lb-stats">
+                        <div class="lb-stat">
+                            <div class="lb-stat-label">Initial</div>
+                            <div class="lb-stat-value">${formatNumber(token.initialMcap)}</div>
+                        </div>
+                        <div class="lb-stat">
+                            <div class="lb-stat-label">Current</div>
+                            <div class="lb-stat-value">${formatNumber(token.currentMcap)}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    } catch (err) {
+        leaderboardList.innerHTML = '<div class="loading">Unable to load leaderboard</div>';
+    }
+};
+
 const updateStatus = async () => {
     const statusDot = document.getElementById('statusDot');
     const statusText = document.getElementById('statusText');
@@ -91,6 +136,7 @@ const loadGems = async () => {
 document.getElementById('refreshBtn').addEventListener('click', () => {
     updateStatus();
     loadGems();
+    loadLeaderboard();
     if (tg) tg.HapticFeedback.impactOccurred('light');
 });
 
@@ -105,6 +151,7 @@ document.getElementById('upgradeBtn').addEventListener('click', () => {
 
 updateStatus();
 loadGems();
+loadLeaderboard();
 
 if (tg) {
     tg.expand();

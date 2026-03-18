@@ -9,14 +9,23 @@ const isTokenCalled = (tokenAddress) => {
     });
 };
 
-const markTokenCalled = (tokenAddress, pairAddress, signalScore) => {
+const markTokenCalled = (tokenAddress, pairAddress, signalScore, initialMcap) => {
     return new Promise((resolve, reject) => {
-        db.run('INSERT INTO called_tokens (token_address, pair_address, signal_score) VALUES (?, ?, ?)', 
-            [tokenAddress, pairAddress, signalScore], function(err) {
+        db.run('INSERT INTO called_tokens (token_address, pair_address, signal_score, initial_mcap) VALUES (?, ?, ?, ?)', 
+            [tokenAddress, pairAddress, signalScore, initialMcap], function(err) {
             if (err) return reject(err);
             resolve(this.changes > 0);
         });
     });
 };
 
-module.exports = { isTokenCalled, markTokenCalled };
+const getLeaderboard = () => {
+    return new Promise((resolve, reject) => {
+        db.all('SELECT token_address, pair_address, signal_score, initial_mcap, created_at FROM called_tokens ORDER BY created_at DESC LIMIT 50', (err, rows) => {
+            if (err) return reject(err);
+            resolve(rows);
+        });
+    });
+};
+
+module.exports = { isTokenCalled, markTokenCalled, getLeaderboard };

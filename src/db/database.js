@@ -17,6 +17,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
       token_address TEXT PRIMARY KEY,
       pair_address TEXT,
       signal_score REAL,
+      initial_mcap REAL,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
   }

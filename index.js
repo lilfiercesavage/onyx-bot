@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const cron = require('node-cron');
+const axios = require('axios');
 const { bot, broadcastGems } = require('./src/bot/bot');
 const { scanForGems } = require('./src/core/scanner');
 const dbUsers = require('./src/db/users');
@@ -26,6 +27,8 @@ let recentGems = [];
 app.get('/api/ping', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
+
+app.get('/api/status/:userId', async (req, res) => {
     try {
         const userId = parseInt(req.params.userId);
         
@@ -57,6 +60,50 @@ app.get('/api/gems', async (req, res) => {
         signalScore: gem.signalScore,
         address: gem.baseToken?.address
     })));
+});
+
+app.get('/api/leaderboard', async (req, res) => {
+    try {
+        const calledTokens = await dbTokens.getLeaderboard();
+        
+        if (calledTokens.length === 0) {
+            return res.json({ leaderboard: [] });
+        }
+
+        const addresses = calledTokens.map(t => t.token_address).join(',');
+        
+        let currentData = {};
+        try {
+            const response = await axios.get(`https://api.dexscreener.com/latest/dex/tokens/${addresses}`);
+            if (response.data?.pairs) {
+                for (const pair of response.data.pairs) {
+                    currentData[pair.baseToken.address.toLowerCase()] = pair.fdv || 0;
+                }
+            }
+        } catch (e) {
+            console.error('Failed to fetch current prices:', e.message);
+        }
+
+        const leaderboard = calledTokens.map(token => {
+            const currentMcap = currentData[token.token_address.toLowerCase()] || 0;
+            const initialMcap = token.initial_mcap || 1;
+            const multiplier = initialMcap > 0 ? currentMcap / initialMcap : 1;
+            
+            return {
+                address: token.token_address,
+                initialMcap: initialMcap,
+                currentMcap: currentMcap,
+                multiplier: multiplier,
+                signalScore: token.signal_score,
+                calledAt: token.created_at
+            };
+        }).sort((a, b) => b.multiplier - a.multiplier);
+
+        res.json({ leaderboard });
+    } catch (err) {
+        console.error('Leaderboard error:', err.message);
+        res.json({ leaderboard: [], error: err.message });
+    }
 });
 
 app.get('/terminal', (req, res) => {

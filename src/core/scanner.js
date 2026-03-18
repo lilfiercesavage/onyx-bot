@@ -40,7 +40,7 @@ const scanForGems = async () => {
             });
 
             // Mark as called
-            await tokenDb.markTokenCalled(gem.baseToken.address, gem.pairAddress, gem.signalScore);
+            await tokenDb.markTokenCalled(gem.baseToken.address, gem.pairAddress, gem.signalScore, gem.fdv);
         }
     }
 
