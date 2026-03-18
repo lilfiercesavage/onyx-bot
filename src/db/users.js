@@ -48,4 +48,4 @@ const getActiveUsers = () => {
     });
 };
 
-module.exports = { activateTrial, checkAccess, getActiveUsers };
+module.exports = { activateUser, checkAccess, getActiveUsers };
