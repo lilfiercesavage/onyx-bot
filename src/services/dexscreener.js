@@ -2,14 +2,23 @@ const axios = require('axios');
 
 const fetchLatestTokens = async () => {
     try {
-        // Fetch latest token boosts as requested for "Fresh Boost"
         const response = await axios.get('https://api.dexscreener.com/token-boosts/latest/v1');
         const tokens = response.data;
         
-        // Filter for Solana and Ethereum
+        if (!tokens || tokens.length === 0) {
+            console.log('No boosted tokens found, trying recent pairs...');
+            return await fetchRecentPairs();
+        }
+        
         const validTokens = tokens.filter(t => t.chainId === 'solana' || t.chainId === 'ethereum');
         
-        // Extract up to 90 token addresses (Dexscreener limit is 30 per request, so we chunk it)
+        if (validTokens.length === 0) {
+            console.log('No valid tokens from boost API');
+            return await fetchRecentPairs();
+        }
+        
+        console.log(`Found ${validTokens.length} boosted tokens`);
+        
         const maxTokens = validTokens.slice(0, 90);
         const chunks = [];
         for (let i = 0; i < maxTokens.length; i += 30) {
@@ -33,8 +42,21 @@ const fetchLatestTokens = async () => {
         return allPairs;
     } catch (error) {
         console.error("DexScreener fetch error:", error.message);
-        return [];
+        return await fetchRecentPairs();
     }
+};
+
+const fetchRecentPairs = async () => {
+    try {
+        const response = await axios.get('https://api.dexscreener.com/latest/dex/pairs/solana?limit=50');
+        if (response.data?.pairs) {
+            console.log(`Fallback: found ${response.data.pairs.length} Solana pairs`);
+            return response.data.pairs;
+        }
+    } catch (err) {
+        console.error("Fallback fetch error:", err.message);
+    }
+    return [];
 };
 
 const filterGems = (pairs) => {
@@ -57,8 +79,8 @@ const filterGems = (pairs) => {
         // Valid social presence check
         const hasSocials = pair.info && pair.info.socials && pair.info.socials.length > 0;
 
-        // Filters: MC < $500k, Liquidity/MC > 15%, Fresh < 120 mins, OR possesses social links
-        if (mc > 0 && mc < 500000 && liquidity > 0 && (liquidity / mc) > 0.15 && ageInMinutes < 120) {
+        // Filters: MC < $1M, Liquidity/MC > 10%, Fresh < 240 mins
+        if (mc > 0 && mc < 1000000 && liquidity > 0 && (liquidity / mc) > 0.10 && ageInMinutes < 240) {
             
             // Core Logic: Signal Score Formula
             // Signal Score = (Liquidity * 0.5) + (Volume1h * 0.3) + (Social_Growth * 0.2)
