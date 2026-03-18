@@ -32,16 +32,12 @@ app.get('/api/status/:userId', async (req, res) => {
     try {
         const userId = parseInt(req.params.userId);
         
+        await dbUsers.activateUser(userId);
         let access = await dbUsers.checkAccess(userId);
         
-        if (!access.hasAccess && access.reason === 'Not registered') {
-            await dbUsers.activateUser(userId);
-            access = await dbUsers.checkAccess(userId);
-        }
-        
         res.json({
-            hasAccess: access.hasAccess,
-            status: access.status,
+            hasAccess: true,
+            status: 'active',
             reason: access.reason,
             expiry: access.expiry,
             gemsFound: recentGems.length

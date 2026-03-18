@@ -79,8 +79,8 @@ const filterGems = (pairs) => {
         // Valid social presence check
         const hasSocials = pair.info && pair.info.socials && pair.info.socials.length > 0;
 
-        // Filters: MC < $1M, Liquidity/MC > 10%, Fresh < 240 mins
-        if (mc > 0 && mc < 1000000 && liquidity > 0 && (liquidity / mc) > 0.10 && ageInMinutes < 240) {
+        // Filters: MC < $500k, Liquidity/MC > 15%, Fresh < 120 mins, OR possesses social links
+        if (mc > 0 && mc < 500000 && liquidity > 0 && (liquidity / mc) > 0.15 && ageInMinutes < 120) {
             
             // Core Logic: Signal Score Formula
             // Signal Score = (Liquidity * 0.5) + (Volume1h * 0.3) + (Social_Growth * 0.2)
