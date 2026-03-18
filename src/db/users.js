@@ -6,16 +6,12 @@ const activateUser = (telegramId) => {
     const expiry = new Date();
     expiry.setFullYear(expiry.getFullYear() + 10);
 
-    const stmt = db.prepare(`
-      INSERT INTO users (telegram_id, status, trial_start, sub_expiry) 
-      VALUES (?, 'active', ?, ?)
-      ON CONFLICT(telegram_id) DO UPDATE SET status = 'active', trial_start = excluded.trial_start, sub_expiry = excluded.sub_expiry
-    `);
-
-    stmt.run([telegramId, now.toISOString(), expiry.toISOString()], function (err) {
-      if (err) reject(err);
-      else resolve({ newUserSetup: this.changes > 0 });
-    });
+    db.run(`INSERT OR REPLACE INTO users (telegram_id, status, trial_start, sub_expiry) VALUES (?, 'active', ?, ?)`,
+      [telegramId, now.toISOString(), expiry.toISOString()],
+      function(err) {
+        if (err) reject(err);
+        else resolve({ newUserSetup: true });
+      });
   });
 };
 
