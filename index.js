@@ -35,6 +35,7 @@ app.get('/api/status/:userId', async (req, res) => {
         let access = await dbUsers.checkAccess(userId);
         
         if (!access.hasAccess && access.reason === 'Not registered') {
+            await dbUsers.activateUser(userId);
             access = await dbUsers.checkAccess(userId);
         }
         
@@ -85,8 +86,13 @@ app.get('/api/leaderboard', async (req, res) => {
         }
 
         const leaderboard = calledTokens.map(token => {
-            const currentMcap = currentData[token.token_address.toLowerCase()] || 0;
-            const initialMcap = token.initial_mcap || 1;
+            let currentMcap = currentData[token.token_address.toLowerCase()] || 0;
+            let initialMcap = token.initial_mcap || token.signal_score * 1000 || 10000;
+            
+            if (currentMcap === 0) {
+                currentMcap = initialMcap;
+            }
+            
             const multiplier = initialMcap > 0 ? currentMcap / initialMcap : 1;
             
             return {
