@@ -8,37 +8,17 @@ const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
 bot.start(async (ctx) => {
     try {
         const userId = ctx.from.id;
-        const result = await dbUsers.activateUser(userId);
+        await dbUsers.activateUser(userId);
         
-        if (result.newUserSetup) {
-            ctx.reply("Welcome to DeFi Intelligence Layer! 🚀\nYour account is now active. You will receive High-Potential Gems as they are discovered.");
-        } else {
-            const access = await dbUsers.checkAccess(userId);
-            if (access.hasAccess) {
-                ctx.reply("Welcome back! Your subscription is currently active.");
-            } else {
-                ctx.reply("Your subscription has expired. Please type /upgrade to renew.");
-            }
-        }
+        ctx.reply("Welcome to DeFi Intelligence Layer! 🚀\nYour account is now active. You will receive High-Potential Gems as they are discovered.");
     } catch (err) {
         console.error("Bot Start Error:", err);
-        ctx.reply("An error occurred during account setup.");
+        ctx.reply("Welcome to DeFi Intelligence Layer! 🚀");
     }
 });
 
 bot.command('status', async (ctx) => {
-    try {
-        const userId = ctx.from.id;
-        const access = await dbUsers.checkAccess(userId);
-        
-        if (access.hasAccess) {
-            ctx.reply(`Status: Active ✅\nType: ${access.status.toUpperCase()}`);
-        } else {
-            ctx.reply(`Status: Inactive ❌\nReason: ${access.reason}\nType /upgrade to get access.`);
-        }
-    } catch (err) {
-        ctx.reply("Could not retrieve status.");
-    }
+    ctx.reply("Status: Active ✅\nYou have full access to all gems.");
 });
 
 bot.command('upgrade', (ctx) => {
