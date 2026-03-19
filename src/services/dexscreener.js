@@ -59,12 +59,20 @@ const fetchRecentPairs = async () => {
     return [];
 };
 
+const KNOWN_CEX_WALLETS = new Set([
+    '0x28c6c06298d514db089934071355e5743bf21d60', // Binance hot wallet
+    '0x21a31ee1afc51d94c2efccaa2092ad1028285549', // Binance cold
+    '0x56eddb7aa87536c09ccc2793473599fd21a8b17f', // Binance deposit
+    '0x9696f00e882d77a38a4a1d70d7a0c7e9f94ac5c5', // Coinbase
+    '0x3f5ce5fbfe3e9af3971dd833d26ba9b5c936f0be', // Kraken
+    '0x0a869d79a7052c7f1b55a8ebabbea3420f0d1e13', // Bitfinex
+]);
+
 const filterGems = (pairs) => {
     const gems = [];
     const now = Date.now();
 
     for (const pair of pairs) {
-        // Must be Solana or Ethereum
         if (pair.chainId !== 'solana' && pair.chainId !== 'ethereum') continue;
 
         const mc = pair.fdv || 0;
@@ -75,34 +83,53 @@ const filterGems = (pairs) => {
         const pairCreatedAt = pair.pairCreatedAt || 0;
         const ageInMinutes = (now - pairCreatedAt) / (1000 * 60);
 
-        // Valid social presence check
-        const hasSocials = pair.info && pair.info.socials && pair.info.socials.length > 0;
-
-        // RUG DETECTION CHECKS
         const buys1h = pair.txns?.h1?.buys || 0;
         const sells1h = pair.txns?.h1?.sells || 0;
         const buySellRatio = sells1h > 0 ? buys1h / sells1h : buys1h;
         
-        // Reject if sell pressure is too high (possible dump detected)
-        if (buySellRatio > 5) continue; // Way more sells than buys = red flag
+        // 🚩 RED FLAG: Extremely fresh tokens (<3 min) - likely sniper bots or dev dump setup
+        if (ageInMinutes < 3) continue;
 
-        // Reject if liquidity is too low (easy to rug)
-        if (liquidity < 5000) continue; // Minimum $5k liquidity
+        // 🚩 RED FLAG: Sell pressure is too high
+        if (buySellRatio > 5) continue;
 
-        // Reject if MC/Liq ratio is suspicious (could be honeypot)
+        // 🚩 RED FLAG: Way too little liquidity - easy to rug
+        if (liquidity < 5000) continue;
+
+        // 🚩 RED FLAG: MC/Liq ratio suspicious
         const liqRatio = liquidity / mc;
-        if (liqRatio < 0.15) continue; // Need at least 15% liq/MC
-        if (liqRatio > 0.8) continue; // Unrealistic high liq = possible honeypot
+        if (liqRatio < 0.15) continue;
+        if (liqRatio > 0.85) continue; // Unrealistic high liq
         
-        // Reject if age is too fresh AND liquidity is too low (pump and dump setup)
+        // 🚩 RED FLAG: Very fresh + low liquidity = pump and dump setup
         if (ageInMinutes < 10 && liquidity < 10000) continue;
+
+        // 🚩 RED FLAG: Check deployer/creator wallet activity
+        const creatorAddress = pair.creatorAddress?.toLowerCase();
+        if (creatorAddress) {
+            // Check if deployer wallet is in the known CEX list (unlikely for fresh tokens)
+            if (KNOWN_CEX_WALLETS.has(creatorAddress)) continue;
+            
+            // For EVM chains, note deployer address for balance check later
+            // Store in pair data for scanner to handle
+        }
+
+        // 🚩 RED FLAG: Very low transaction count suggests wash trading or dead token
+        if (txs1h < 5 && ageInMinutes > 15) continue;
 
         // Filters: MC < $500k, Age < 60 mins (fresh tokens)
         if (mc > 500 && mc < 500000 && ageInMinutes < 60) {
             
-            // Core Logic: Signal Score Formula with safety adjustments
-            // Penalize high sell pressure
-            const sellPenalty = Math.max(0.3, 1 - (sellBuyRatio * 0.1));
+            // Calculate sell penalty based on buy/sell ratio
+            // Ideal ratio is 1:1, penalize heavily if ratio is bad
+            let sellPenalty = 1;
+            if (buySellRatio < 0.5) {
+                sellPenalty = 0.3; // Heavy sell pressure
+            } else if (buySellRatio < 1) {
+                sellPenalty = 0.6; // Moderate sell pressure
+            } else if (buySellRatio > 3) {
+                sellPenalty = 0.7; // Suspicious high buys (possible wash trading)
+            }
             
             const normalizedLiq = liquidity / 1000;
             const normalizedVol = volume1h / 1000;

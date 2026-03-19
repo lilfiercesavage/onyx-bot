@@ -1,5 +1,6 @@
 const dexscreener = require('../services/dexscreener');
 const goplus = require('../services/goplus');
+const evm = require('../services/evm');
 const groq = require('../services/groq');
 const tokenDb = require('../db/tokens');
 
@@ -18,13 +19,26 @@ const scanForGems = async () => {
     const validGems = [];
 
     for (const gem of potentialGems) {
-        // Check if already called
+        // Check if already called (24hr cooldown)
         const isCalled = await tokenDb.isTokenCalled(gem.baseToken.address);
         if (isCalled) {
             continue;
         }
 
-        // Check GoPlus Security (Safety Multiplier M_safe)
+        // 🚩 Check deployer token balance (EVM chains only)
+        if (gem.creatorAddress && gem.chainId !== 'solana') {
+            const deployerCheck = await evm.checkDeployerBalance(
+                gem.chainId,
+                gem.baseToken.address,
+                gem.creatorAddress
+            );
+            if (!deployerCheck.safe) {
+                console.log(`Filtered ${gem.baseToken.symbol}: Deployer holds ${deployerCheck.percentage}%`);
+                continue;
+            }
+        }
+
+        // Check GoPlus + Token Sniffer Security
         const mSafe = await goplus.checkSecurity(gem.chainId, gem.baseToken.address);
         
         // Final Score 
