@@ -1,12 +1,18 @@
 require('dotenv').config();
 const express = require('express');
 const path = require('path');
+const crypto = require('crypto');
 const cron = require('node-cron');
 const axios = require('axios');
 const { bot, broadcastGems } = require('./src/bot/bot');
 const { scanForGems } = require('./src/core/scanner');
 const dbUsers = require('./src/db/users');
 const dbTokens = require('./src/db/tokens');
+
+const PORT = process.env.PORT || 3000;
+const DOMAIN = (process.env.RENDER_EXTERNAL_URL || process.env.DOMAIN || 'https://your-app.onrender.com')
+    .replace(/^https?:\/\//, '')
+    .replace(/\/$/, '');
 
 if (!process.env.TELEGRAM_BOT_TOKEN) {
     console.warn("WARNING: TELEGRAM_BOT_TOKEN is not set. Bot will fail to start.");
@@ -21,6 +27,9 @@ console.log("Starting DeFi Intelligence Layer Bot...");
 const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+
+const secretPath = crypto.randomBytes(32).toString('hex');
+console.log(`Webhook secret path: /${secretPath}`);
 
 let recentGems = [];
 
@@ -112,7 +121,6 @@ app.get('/terminal', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Alpha Terminal running on port ${PORT}`);
 });
@@ -122,13 +130,19 @@ app.listen(PORT, () => {
         const me = await bot.telegram.getMe();
         console.log(`Bot connected to Telegram as @${me.username}`);
         
-        await bot.launch();
-        console.log("Telegram Bot started successfully via polling.");
+        await bot.telegram.setWebhook(`https://${DOMAIN}/${secretPath}`);
+        console.log(`Webhook set to: https://${DOMAIN}/${secretPath}`);
+        
+        app.use(`/${secretPath}`, (req, res, next) => {
+            if (req.method !== 'POST') {
+                return res.send('OK');
+            }
+            bot.handleUpdate(req.body, res);
+        });
+        
+        console.log("Telegram Bot started successfully via webhook.");
     } catch (err) {
         console.error("Failed to start Telegram Bot:", err.message);
-        if (err.message.includes("409")) {
-            console.error("CRITICAL: Another instance of this bot is already running elsewhere.");
-        }
     }
 })();
 
