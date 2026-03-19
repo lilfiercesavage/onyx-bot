@@ -19,25 +19,27 @@ const scanForGems = async () => {
     const validGems = [];
 
     for (const gem of potentialGems) {
-        // Check if already called (24hr cooldown)
         const isCalled = await tokenDb.isTokenCalled(gem.baseToken.address);
         if (isCalled) {
             continue;
         }
 
-        // 🚩 Check deployer token balance (EVM chains only)
-        if (gem.creatorAddress && gem.chainId !== 'solana') {
-            const deployerCheck = await evm.checkDeployerBalance(
-                gem.chainId,
-                gem.baseToken.address,
-                gem.creatorAddress
-            );
-            if (!deployerCheck.safe) {
-                console.log(`Filtered ${gem.baseToken.symbol}: Deployer holds ${deployerCheck.percentage.toFixed(1)}%`);
-                continue;
+        // 🚩 EVM Security Checks
+        if (gem.chainId !== 'solana') {
+            // Deployer balance check
+            if (gem.creatorAddress) {
+                const deployerCheck = await evm.checkDeployerBalance(
+                    gem.chainId,
+                    gem.baseToken.address,
+                    gem.creatorAddress
+                );
+                if (!deployerCheck.safe) {
+                    console.log(`Filtered ${gem.baseToken.symbol}: Deployer holds ${deployerCheck.percentage.toFixed(1)}%`);
+                    continue;
+                }
             }
             
-            // 🚩 Check any holder >15% (requires MORALIS_API_KEY in .env)
+            // Top holder >15% + get addresses for sybil check
             const holderCheck = await evm.checkTopHolderConcentration(
                 gem.chainId,
                 gem.baseToken.address
@@ -46,16 +48,38 @@ const scanForGems = async () => {
                 console.log(`Filtered ${gem.baseToken.symbol}: Top holder has ${holderCheck.maxPercentage.toFixed(1)}%`);
                 continue;
             }
+            
+            // 🚩 Sybil Detection - wallets funded by same source
+            if (holderCheck.holderAddresses.length > 0) {
+                const sybilCheck = await evm.checkSybilResistance(
+                    gem.chainId,
+                    gem.baseToken.address,
+                    holderCheck.holderAddresses
+                );
+                if (!sybilCheck.safe) {
+                    console.log(`Filtered ${gem.baseToken.symbol}: Sybil wallets detected (${sybilCheck.linkedWallets})`);
+                    continue;
+                }
+                
+                // 🚩 Coordinated Trading - wallets buying at exact same timestamp
+                const coordCheck = await evm.checkCoordinatedTrading(
+                    gem.chainId,
+                    gem.baseToken.address,
+                    holderCheck.holderAddresses
+                );
+                if (!coordCheck.safe) {
+                    console.log(`Filtered ${gem.baseToken.symbol}: Coordinated buying detected`);
+                    continue;
+                }
+            }
         }
 
         // Check GoPlus + Token Sniffer Security
         const mSafe = await goplus.checkSecurity(gem.chainId, gem.baseToken.address);
         
-        // Final Score 
         gem.signalScore = gem.signalScore * mSafe;
 
         if (mSafe === 1 && gem.signalScore > 0) {
-            // Generate Summary
             const summary = await groq.generateSummary(gem);
             
             validGems.push({
@@ -63,7 +87,6 @@ const scanForGems = async () => {
                 summary
             });
 
-            // Mark as called
             await tokenDb.markTokenCalled(gem.baseToken.address, gem.pairAddress, gem.signalScore, gem.fdv);
         }
     }
