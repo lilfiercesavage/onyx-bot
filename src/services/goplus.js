@@ -10,40 +10,45 @@ const GOPLUS_CHAIN_MAP = {
 
 const checkSecurity = async (chainId, contractAddress) => {
     try {
-        if (chainId === 'solana') {
-            const url = `https://api.gopluslabs.io/api/v1/solana/token_security?contract_addresses=${contractAddress}`;
-            const response = await axios.get(url, { timeout: 10000 });
-            if (response.data && response.data.result && response.data.result[contractAddress.toLowerCase()]) {
-                const data = response.data.result[contractAddress.toLowerCase()];
-                // Basic checks for Solana (e.g., mintable, freezable)
-                // GoPlus solana response mapping
-                const isMalicious = (data.is_blacklisted === "1" || data.is_honeypot === "1");
-                return isMalicious ? 0 : 1; 
-            }
-            return 1; // Default to safe if not found
-        } else {
-            const goPlusChainId = GOPLUS_CHAIN_MAP[chainId];
-            if (!goPlusChainId) return 1; // Unsupported chain by default assumed safe or ignored
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 5000);
+        
+        try {
+            if (chainId === 'solana') {
+                const url = `https://api.gopluslabs.io/api/v1/solana/token_security?contract_addresses=${contractAddress}`;
+                const response = await axios.get(url, { signal: controller.signal });
+                clearTimeout(timeout);
+                if (response.data && response.data.result && response.data.result[contractAddress.toLowerCase()]) {
+                    const data = response.data.result[contractAddress.toLowerCase()];
+                    const isMalicious = (data.is_blacklisted === "1" || data.is_honeypot === "1");
+                    return isMalicious ? 0 : 1; 
+                }
+                return 1;
+            } else {
+                const goPlusChainId = GOPLUS_CHAIN_MAP[chainId];
+                if (!goPlusChainId) return 1;
 
-            const url = `https://api.gopluslabs.io/api/v1/token_security/${goPlusChainId}?contract_addresses=${contractAddress}`;
-            const response = await axios.get(url, { timeout: 10000 });
-            
-            const lowerAddress = contractAddress.toLowerCase();
-            if (response.data && response.data.result && response.data.result[lowerAddress]) {
-                const data = response.data.result[lowerAddress];
-                // Honeypot, hidden owner, cant sell, malicious
-                if (data.is_honeypot === "1" || data.is_blacklisted === "1" || data.cannot_sell_all === "1") {
-                    return 0;
+                const url = `https://api.gopluslabs.io/api/v1/token_security/${goPlusChainId}?contract_addresses=${contractAddress}`;
+                const response = await axios.get(url, { signal: controller.signal });
+                clearTimeout(timeout);
+                
+                const lowerAddress = contractAddress.toLowerCase();
+                if (response.data && response.data.result && response.data.result[lowerAddress]) {
+                    const data = response.data.result[lowerAddress];
+                    if (data.is_honeypot === "1" || data.is_blacklisted === "1" || data.cannot_sell_all === "1") {
+                        return 0;
+                    }
+                    return 1;
                 }
                 return 1;
             }
-            return 1;
+        } catch (innerErr) {
+            clearTimeout(timeout);
+            throw innerErr;
         }
     } catch (error) {
         console.error("GoPlus Check Error:", error.message);
-        // Fallback to safe if API errors out so we don't completely halt, 
-        // OR better: we return 0 if we can't verify to be extra safe
-        return 0; 
+        return 0; // Default to unsafe on error for safety
     }
 };
 

@@ -19,14 +19,17 @@ Contract Address (CA): \`${tokenData.baseToken.address}\`
 
 Format as a Telegram message. Emphasize that the contract is safe (GoPlus verified). Include the Contract Address prominently at the bottom for easy copying. Keep it short, actionable, and hype.`;
 
-        const chatCompletion = await groq.chat.completions.create({
-            messages: [
-                { role: 'user', content: prompt }
-            ],
-            model: 'llama-3.1-8b-instant',
-            temperature: 0.7,
-            max_tokens: 300
-        });
+        const chatCompletion = await Promise.race([
+            groq.chat.completions.create({
+                messages: [
+                    { role: 'user', content: prompt }
+                ],
+                model: 'llama-3.1-8b-instant',
+                temperature: 0.7,
+                max_tokens: 300
+            }),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Groq timeout')), 8000))
+        ]);
 
         return chatCompletion.choices[0]?.message?.content || "No summary generated.";
     } catch (error) {

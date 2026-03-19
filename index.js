@@ -32,9 +32,10 @@ const secretPath = crypto.randomBytes(32).toString('hex');
 console.log(`Webhook secret path: /${secretPath}`);
 
 let recentGems = [];
+let scanInProgress = false;
 
 app.get('/api/ping', (req, res) => {
-    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+    res.json({ status: 'ok', timestamp: new Date().toISOString(), scanRunning: scanInProgress, gems: recentGems.length });
 });
 
 app.get('/api/status/:userId', async (req, res) => {
@@ -166,14 +167,26 @@ process.once('SIGINT', () => bot.stop('SIGINT'));
 process.once('SIGTERM', () => bot.stop('SIGTERM'));
 
 cron.schedule('*/5 * * * *', async () => {
+    if (scanInProgress) {
+        console.log('Scan already in progress, skipping...');
+        return;
+    }
+    
+    scanInProgress = true;
     try {
+        console.log(`[${new Date().toISOString()}] Starting scheduled scan...`);
         const gems = await scanForGems();
         recentGems = [...gems, ...recentGems].slice(0, 20);
         if (gems.length > 0) {
+            console.log(`Found ${gems.length} new gems, broadcasting...`);
             await broadcastGems(gems);
+        } else {
+            console.log(`Scheduled scan complete. No new gems.`);
         }
     } catch (error) {
         console.error("Error during scheduled scanner run:", error.message);
+    } finally {
+        scanInProgress = false;
     }
 });
 
