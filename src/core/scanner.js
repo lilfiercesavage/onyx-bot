@@ -33,7 +33,17 @@ const scanForGems = async () => {
                 gem.creatorAddress
             );
             if (!deployerCheck.safe) {
-                console.log(`Filtered ${gem.baseToken.symbol}: Deployer holds ${deployerCheck.percentage}%`);
+                console.log(`Filtered ${gem.baseToken.symbol}: Deployer holds ${deployerCheck.percentage.toFixed(1)}%`);
+                continue;
+            }
+            
+            // 🚩 Check any holder >15% (requires MORALIS_API_KEY in .env)
+            const holderCheck = await evm.checkTopHolderConcentration(
+                gem.chainId,
+                gem.baseToken.address
+            );
+            if (!holderCheck.safe) {
+                console.log(`Filtered ${gem.baseToken.symbol}: Top holder has ${holderCheck.maxPercentage.toFixed(1)}%`);
                 continue;
             }
         }
