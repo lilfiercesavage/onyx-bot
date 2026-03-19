@@ -67,11 +67,10 @@ const filterGems = (pairs) => {
         // Must be Solana or Ethereum
         if (pair.chainId !== 'solana' && pair.chainId !== 'ethereum') continue;
 
-        const mc = pair.fdv || 0; // Fully diluted valuation as Market Cap approximation
+        const mc = pair.fdv || 0;
         const liquidity = pair.liquidity?.usd || 0;
         const volume1h = pair.volume?.h1 || 0;
-        // Approximation of social growth through tx count
-        const txs1h = (pair.txns?.h1?.buys || 0) + (pair.txns?.h1?.sells || 0); 
+        const txs1h = (pair.txns?.h1?.buys || 0) + (pair.txns?.h1?.sells || 0);
         
         const pairCreatedAt = pair.pairCreatedAt || 0;
         const ageInMinutes = (now - pairCreatedAt) / (1000 * 60);
@@ -79,20 +78,42 @@ const filterGems = (pairs) => {
         // Valid social presence check
         const hasSocials = pair.info && pair.info.socials && pair.info.socials.length > 0;
 
-        // Filters: MC < $500k, Liquidity/MC > 8%, Age < 60 mins (fresh tokens)
-        if (mc > 500 && mc < 500000 && liquidity > 500 && (liquidity / mc) > 0.08 && ageInMinutes < 60) {
+        // RUG DETECTION CHECKS
+        const buys1h = pair.txns?.h1?.buys || 0;
+        const sells1h = pair.txns?.h1?.sells || 0;
+        const buySellRatio = sells1h > 0 ? buys1h / sells1h : buys1h;
+        
+        // Reject if sell pressure is too high (possible dump detected)
+        if (buySellRatio > 5) continue; // Way more sells than buys = red flag
+
+        // Reject if liquidity is too low (easy to rug)
+        if (liquidity < 5000) continue; // Minimum $5k liquidity
+
+        // Reject if MC/Liq ratio is suspicious (could be honeypot)
+        const liqRatio = liquidity / mc;
+        if (liqRatio < 0.15) continue; // Need at least 15% liq/MC
+        if (liqRatio > 0.8) continue; // Unrealistic high liq = possible honeypot
+        
+        // Reject if age is too fresh AND liquidity is too low (pump and dump setup)
+        if (ageInMinutes < 10 && liquidity < 10000) continue;
+
+        // Filters: MC < $500k, Age < 60 mins (fresh tokens)
+        if (mc > 500 && mc < 500000 && ageInMinutes < 60) {
             
-            // Core Logic: Signal Score Formula
-            // Signal Score = (Liquidity * 0.5) + (Volume1h * 0.3) + (Social_Growth * 0.2)
+            // Core Logic: Signal Score Formula with safety adjustments
+            // Penalize high sell pressure
+            const sellPenalty = Math.max(0.3, 1 - (sellBuyRatio * 0.1));
+            
             const normalizedLiq = liquidity / 1000;
             const normalizedVol = volume1h / 1000;
             const normalizedSoc = txs1h;
 
-            const signalScore = (normalizedLiq * 0.5) + (normalizedVol * 0.3) + (normalizedSoc * 0.2);
+            const signalScore = ((normalizedLiq * 0.5) + (normalizedVol * 0.3) + (normalizedSoc * 0.2)) * sellPenalty;
 
             gems.push({
                 ...pair,
-                signalScore
+                signalScore,
+                sellPenalty
             });
         }
     }

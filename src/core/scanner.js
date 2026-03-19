@@ -12,7 +12,7 @@ const scanForGems = async () => {
         return [];
     }
 
-    const potentialGems = dexscreener.filterGems(pairs).slice(0, 20);
+    const potentialGems = dexscreener.filterGems(pairs).slice(0, 100);
     console.log(`Found ${potentialGems.length} potential gems before security check.`);
 
     const validGems = [];
