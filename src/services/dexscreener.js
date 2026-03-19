@@ -19,7 +19,7 @@ const fetchLatestTokens = async () => {
         
         console.log(`Found ${validTokens.length} boosted tokens`);
         
-        const maxTokens = validTokens.slice(0, 90);
+        const maxTokens = validTokens.slice(0, 150);
         const chunks = [];
         for (let i = 0; i < maxTokens.length; i += 30) {
             chunks.push(maxTokens.slice(i, i + 30).map(t => t.tokenAddress).join(','));
@@ -79,8 +79,8 @@ const filterGems = (pairs) => {
         // Valid social presence check
         const hasSocials = pair.info && pair.info.socials && pair.info.socials.length > 0;
 
-        // Filters: MC < $500k, Liquidity/MC > 15%, Fresh < 120 mins, OR possesses social links
-        if (mc > 0 && mc < 500000 && liquidity > 0 && (liquidity / mc) > 0.15 && ageInMinutes < 120) {
+        // Filters: MC < $500k, Liquidity/MC > 8%, Age < 60 mins (fresh tokens)
+        if (mc > 500 && mc < 500000 && liquidity > 500 && (liquidity / mc) > 0.08 && ageInMinutes < 60) {
             
             // Core Logic: Signal Score Formula
             // Signal Score = (Liquidity * 0.5) + (Volume1h * 0.3) + (Social_Growth * 0.2)
