@@ -1,8 +1,9 @@
 const db = require('./database');
 
-const isTokenCalled = (tokenAddress) => {
+const isTokenCalled = (tokenAddress, cooldownHours = 24) => {
     return new Promise((resolve, reject) => {
-        db.get('SELECT * FROM called_tokens WHERE token_address = ?', [tokenAddress], (err, row) => {
+        db.get('SELECT * FROM called_tokens WHERE token_address = ? AND created_at > datetime("now", ?)', 
+            [tokenAddress, `-${cooldownHours} hours`], (err, row) => {
             if (err) return reject(err);
             resolve(!!row);
         });
