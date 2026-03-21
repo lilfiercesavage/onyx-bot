@@ -80,11 +80,17 @@ app.get('/api/leaderboard', async (req, res) => {
         const addresses = calledTokens.map(t => t.token_address).join(',');
         
         let currentData = {};
+        let athData = {};
         try {
             const response = await axios.get(`https://api.dexscreener.com/latest/dex/tokens/${addresses}`);
             if (response.data?.pairs) {
                 for (const pair of response.data.pairs) {
                     currentData[pair.baseToken.address.toLowerCase()] = pair.fdv || 0;
+                    athData[pair.baseToken.address.toLowerCase()] = {
+                        athMarketCap: pair.marketCap || 0,
+                        athPrice: pair.priceChange?.athPrice || 0,
+                        athDate: pair.priceChange?.athDate || null
+                    };
                 }
             }
         } catch (e) {
@@ -92,19 +98,19 @@ app.get('/api/leaderboard', async (req, res) => {
         }
 
         const leaderboard = calledTokens.map(token => {
-            let currentMcap = currentData[token.token_address.toLowerCase()] || 0;
+            let athMcap = athData[token.token_address.toLowerCase()]?.athMarketCap || currentData[token.token_address.toLowerCase()] || 0;
             let initialMcap = token.initial_mcap || token.signal_score * 1000 || 10000;
             
-            if (currentMcap === 0) {
-                currentMcap = initialMcap;
+            if (athMcap === 0) {
+                athMcap = initialMcap;
             }
             
-            const multiplier = initialMcap > 0 ? currentMcap / initialMcap : 1;
+            const multiplier = initialMcap > 0 ? athMcap / initialMcap : 1;
             
             return {
                 address: token.token_address,
                 initialMcap: initialMcap,
-                currentMcap: currentMcap,
+                athMcap: athMcap,
                 multiplier: multiplier,
                 signalScore: token.signal_score,
                 calledAt: token.created_at

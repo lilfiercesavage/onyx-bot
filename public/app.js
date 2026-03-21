@@ -47,8 +47,8 @@ const loadLeaderboard = async () => {
                             <div class="lb-stat-value">${formatNumber(token.initialMcap)}</div>
                         </div>
                         <div class="lb-stat">
-                            <div class="lb-stat-label">Current</div>
-                            <div class="lb-stat-value">${formatNumber(token.currentMcap)}</div>
+                            <div class="lb-stat-label">ATH</div>
+                            <div class="lb-stat-value">${formatNumber(token.athMcap)}</div>
                         </div>
                     </div>
                 </div>
