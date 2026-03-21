@@ -18,8 +18,11 @@ const db = new sqlite3.Database(dbPath, (err) => {
       pair_address TEXT,
       signal_score REAL,
       initial_mcap REAL,
+      ath_mcap REAL DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
+    
+    db.run(`ALTER TABLE called_tokens ADD COLUMN ath_mcap REAL DEFAULT 0`);
   }
 });
 
