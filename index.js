@@ -71,7 +71,7 @@ app.get('/api/gems', async (req, res) => {
 
 app.get('/api/leaderboard', async (req, res) => {
     try {
-        const calledTokens = await dbTokens.getLeaderboard();
+        let calledTokens = await dbTokens.getLeaderboard();
         
         if (calledTokens.length === 0) {
             return res.json({ leaderboard: [] });
@@ -85,17 +85,19 @@ app.get('/api/leaderboard', async (req, res) => {
                 for (const pair of response.data.pairs) {
                     const addr = pair.baseToken.address.toLowerCase();
                     const currentMcap = pair.fdv || 0;
-                    dbTokens.updateAthMcap(addr, currentMcap);
+                    await dbTokens.updateAthMcap(addr, currentMcap);
                 }
             }
         } catch (e) {
             console.error('Failed to fetch current prices:', e.message);
         }
 
+        calledTokens = await dbTokens.getLeaderboard();
+
         const leaderboard = calledTokens.map(token => {
-            const athMcap = token.ath_mcap || token.initial_mcap || 10000;
-            const initialMcap = token.initial_mcap || 10000;
-            const multiplier = initialMcap > 0 ? athMcap / initialMcap : 1;
+            const athMcap = token.ath_mcap || 0;
+            const initialMcap = token.initial_mcap || 0;
+            const multiplier = initialMcap > 0 && athMcap > 0 ? athMcap / initialMcap : 1;
             
             return {
                 address: token.token_address,
