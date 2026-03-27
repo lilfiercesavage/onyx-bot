@@ -97,7 +97,7 @@ app.get('/api/leaderboard', async (req, res) => {
         const leaderboard = calledTokens.map(token => {
             const athMcap = token.ath_mcap || 0;
             const initialMcap = token.initial_mcap || 0;
-            const multiplier = initialMcap > 0 && athMcap > 0 ? athMcap / initialMcap : 1;
+            const multiplier = initialMcap > 0 && athMcap > initialMcap ? athMcap / initialMcap : 1;
             
             return {
                 address: token.token_address,

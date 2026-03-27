@@ -13,7 +13,7 @@ const isTokenCalled = (tokenAddress, cooldownHours = 24) => {
 const markTokenCalled = (tokenAddress, pairAddress, signalScore, initialMcap) => {
     return new Promise((resolve, reject) => {
         db.run('INSERT INTO called_tokens (token_address, pair_address, signal_score, initial_mcap, ath_mcap) VALUES (?, ?, ?, ?, ?)', 
-            [tokenAddress, pairAddress, signalScore, initialMcap, initialMcap], function(err) {
+            [tokenAddress, pairAddress, signalScore, initialMcap, 0], function(err) {
             if (err) return reject(err);
             resolve(this.changes > 0);
         });
@@ -22,7 +22,7 @@ const markTokenCalled = (tokenAddress, pairAddress, signalScore, initialMcap) =>
 
 const updateAthMcap = (tokenAddress, currentMcap) => {
     return new Promise((resolve, reject) => {
-        db.run('UPDATE called_tokens SET ath_mcap = MAX(ath_mcap, ?) WHERE token_address = ?', 
+        db.run('UPDATE called_tokens SET ath_mcap = MAX(ath_mcap, ?) WHERE LOWER(token_address) = LOWER(?)', 
             [currentMcap, tokenAddress], function(err) {
             if (err) return reject(err);
             resolve(this.changes > 0);
