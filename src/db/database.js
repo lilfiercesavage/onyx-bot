@@ -23,8 +23,14 @@ const db = new sqlite3.Database(dbPath, (err) => {
     )`);
     
     db.all("PRAGMA table_info(called_tokens)", (err, cols) => {
-      if (!err && cols && !cols.find(c => c.name === 'ath_mcap')) {
-        db.run(`ALTER TABLE called_tokens ADD COLUMN ath_mcap REAL DEFAULT 0`);
+      if (!err && cols) {
+        const colNames = cols.map(c => c.name);
+        if (!colNames.includes('ath_mcap')) {
+          db.run(`ALTER TABLE called_tokens ADD COLUMN ath_mcap REAL DEFAULT 0`);
+        }
+        if (!colNames.includes('initial_mcap')) {
+          db.run(`ALTER TABLE called_tokens ADD COLUMN initial_mcap REAL DEFAULT 0`);
+        }
       }
     });
   }
