@@ -173,6 +173,9 @@ cron.schedule('*/5 * * * *', async () => {
     scanInProgress = true;
     try {
         console.log(`[${new Date().toISOString()}] Starting scheduled scan...`);
+        
+        await updateAllAth();
+        
         const gems = await scanForGems();
         recentGems = [...gems, ...recentGems].slice(0, 20);
         if (gems.length > 0) {
@@ -187,5 +190,26 @@ cron.schedule('*/5 * * * *', async () => {
         scanInProgress = false;
     }
 });
+
+const updateAllAth = async () => {
+    try {
+        const calledTokens = await dbTokens.getLeaderboard();
+        if (calledTokens.length === 0) return;
+        
+        const addresses = calledTokens.map(t => t.token_address).join(',');
+        const response = await axios.get(`https://api.dexscreener.com/latest/dex/tokens/${addresses}`);
+        
+        if (response.data?.pairs) {
+            for (const pair of response.data.pairs) {
+                const addr = pair.baseToken.address.toLowerCase();
+                const currentMcap = pair.fdv || 0;
+                await dbTokens.updateAthMcap(addr, currentMcap);
+            }
+            console.log(`Updated ATH for ${response.data.pairs.length} tokens`);
+        }
+    } catch (e) {
+        console.error('Failed to update ATH:', e.message);
+    }
+};
 
 console.log("Scanner Job Scheduled (runs every 5 minutes).");
