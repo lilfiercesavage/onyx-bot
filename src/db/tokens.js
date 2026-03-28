@@ -39,4 +39,13 @@ const getLeaderboard = () => {
     });
 };
 
-module.exports = { isTokenCalled, markTokenCalled, updateAthMcap, getLeaderboard };
+const getHallOfFame = () => {
+    return new Promise((resolve, reject) => {
+        db.all('SELECT token_address, pair_address, signal_score, initial_mcap, ath_mcap, created_at FROM called_tokens WHERE initial_mcap > 0 AND ath_mcap > initial_mcap * 5 ORDER BY (ath_mcap / initial_mcap) DESC LIMIT 20', (err, rows) => {
+            if (err) return reject(err);
+            resolve(rows);
+        });
+    });
+};
+
+module.exports = { isTokenCalled, markTokenCalled, updateAthMcap, getLeaderboard, getHallOfFame };

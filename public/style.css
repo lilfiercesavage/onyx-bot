@@ -160,6 +160,30 @@ header h1 {
 .multiplier-high { color: var(--accent-green); }
 .multiplier-mid { color: var(--accent-gold); }
 .multiplier-low { color: var(--accent-red); }
+.multiplier-legendary { 
+    color: #ff6b35;
+    text-shadow: 0 0 10px rgba(255,107,53,0.5);
+}
+
+.hall-of-fame {
+    background: linear-gradient(135deg, rgba(255,215,0,0.05), rgba(255,107,53,0.05));
+    border-radius: 16px;
+    padding: 16px;
+    border: 1px solid rgba(255,215,0,0.2);
+}
+
+.hall-of-fame h2 {
+    color: var(--accent-gold);
+}
+
+.hall-of-fame-item {
+    border: 1px solid rgba(255,215,0,0.15);
+}
+
+.hall-of-fame-item.top-gold {
+    border: 2px solid var(--accent-gold);
+    background: linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,107,53,0.1));
+}
 
 .lb-stats {
     display: flex;

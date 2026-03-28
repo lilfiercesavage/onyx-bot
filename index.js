@@ -107,12 +107,65 @@ app.get('/api/leaderboard', async (req, res) => {
                 signalScore: token.signal_score,
                 calledAt: token.created_at
             };
-        }).sort((a, b) => b.multiplier - a.multiplier);
+        }).sort((a, b) => {
+            if (b.multiplier !== a.multiplier) return b.multiplier - a.multiplier;
+            return b.signalScore - a.signalScore;
+        });
 
         res.json({ leaderboard });
     } catch (err) {
         console.error('Leaderboard error:', err.message);
         res.json({ leaderboard: [], error: err.message });
+    }
+});
+
+app.get('/api/hall-of-fame', async (req, res) => {
+    try {
+        let calledTokens = await dbTokens.getHallOfFame();
+        
+        if (calledTokens.length === 0) {
+            return res.json({ hallOfFame: [] });
+        }
+
+        const addresses = calledTokens.map(t => t.token_address).join(',');
+        
+        try {
+            const response = await axios.get(`https://api.dexscreener.com/latest/dex/tokens/${addresses}`);
+            if (response.data?.pairs) {
+                for (const pair of response.data.pairs) {
+                    const addr = pair.baseToken.address.toLowerCase();
+                    const currentMcap = pair.fdv || 0;
+                    await dbTokens.updateAthMcap(addr, currentMcap);
+                }
+            }
+        } catch (e) {
+            console.error('Failed to fetch current prices:', e.message);
+        }
+
+        calledTokens = await dbTokens.getHallOfFame();
+
+        const hallOfFame = calledTokens.map(token => {
+            const athMcap = token.ath_mcap || 0;
+            const initialMcap = token.initial_mcap || 0;
+            const multiplier = initialMcap > 0 ? athMcap / initialMcap : 0;
+            
+            return {
+                address: token.token_address,
+                initialMcap: initialMcap,
+                athMcap: athMcap,
+                multiplier: multiplier,
+                signalScore: token.signal_score,
+                calledAt: token.created_at
+            };
+        }).sort((a, b) => {
+            if (b.multiplier !== a.multiplier) return b.multiplier - a.multiplier;
+            return b.signalScore - a.signalScore;
+        });
+
+        res.json({ hallOfFame });
+    } catch (err) {
+        console.error('Hall of Fame error:', err.message);
+        res.json({ hallOfFame: [], error: err.message });
     }
 });
 
