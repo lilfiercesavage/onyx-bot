@@ -8,6 +8,7 @@ const { bot, broadcastGems } = require('./src/bot/bot');
 const { scanForGems } = require('./src/core/scanner');
 const dbUsers = require('./src/db/users');
 const dbTokens = require('./src/db/tokens');
+const { fetchDexScreenerCandles, fetchTrueMarketCap, getSpikeMetrics } = require('./src/services/ohlcv');
 
 const PORT = process.env.PORT || 3000;
 const DOMAIN = (process.env.RENDER_EXTERNAL_URL || process.env.DOMAIN || 'https://your-app.onrender.com')
@@ -169,6 +170,28 @@ app.get('/api/hall-of-fame', async (req, res) => {
     }
 });
 
+app.get('/api/active-tracking', async (req, res) => {
+    try {
+        const activeTokens = await dbTokens.getActiveTrackingTokens();
+        
+        const tracking = activeTokens.map(token => ({
+            address: token.token_address,
+            pairAddress: token.pair_address,
+            initialMcap: token.initial_mcap,
+            currentAthMcap: token.ath_mcap,
+            currentHigh: token.ath_high,
+            pollInterval: token.poll_interval,
+            signalScore: token.signal_score,
+            calledAt: token.created_at,
+            multiplier: token.initial_mcap > 0 ? (token.ath_mcap / token.initial_mcap).toFixed(2) : '0.00'
+        }));
+        
+        res.json({ activeTracking: tracking });
+    } catch (err) {
+        res.json({ activeTracking: [], error: err.message });
+    }
+});
+
 app.get('/terminal', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
@@ -266,3 +289,70 @@ const updateAllAth = async () => {
 };
 
 console.log("Scanner Job Scheduled (runs every 5 minutes).");
+
+const trackActiveGems = async () => {
+    try {
+        const activeTokens = await dbTokens.getActiveTrackingTokens();
+        
+        if (activeTokens.length === 0) {
+            console.log('[ActiveTracker] No active gems to track');
+            return;
+        }
+        
+        console.log(`[ActiveTracker] Tracking ${activeTokens.length} gems...`);
+        
+        for (const token of activeTokens) {
+            try {
+                const response = await axios.get(`https://api.dexscreener.com/latest/dex/tokens/${token.token_address}`);
+                
+                if (response.data?.pairs?.[0]) {
+                    const pair = response.data.pairs[0];
+                    const currentMcap = pair.fdv || 0;
+                    const currentPrice = pair.priceUsd || 0;
+                    
+                    let spikeHigh = currentMcap;
+                    
+                    const candles = await fetchDexScreenerCandles(token.pair_address);
+                    if (candles && candles.length > 0) {
+                        const metrics = getSpikeMetrics(candles);
+                        if (metrics) {
+                            const candleHighMcap = currentMcap * (metrics.periodHigh / metrics.open);
+                            spikeHigh = Math.max(currentMcap, candleHighMcap);
+                            console.log(`[${token.token_address.slice(0,8)}...] Spike detected: ${metrics.spikePercent}% high`);
+                        }
+                        
+                        const lastCandle = candles[candles.length - 1];
+                        await dbTokens.recordPriceHistory(
+                            token.token_address,
+                            lastCandle.open,
+                            lastCandle.high,
+                            lastCandle.low,
+                            lastCandle.close,
+                            lastCandle.volume,
+                            currentMcap
+                        );
+                    }
+                    
+                    const supplyData = await fetchTrueMarketCap(token.token_address, currentPrice, pair.chainId);
+                    if (supplyData.trueMcap > 0) {
+                        spikeHigh = Math.max(spikeHigh, supplyData.trueMcap);
+                    }
+                    
+                    await dbTokens.updateActiveTracking(token.token_address, spikeHigh, spikeHigh, supplyData.supply);
+                    await dbTokens.updateAthMcap(token.token_address, spikeHigh);
+                    
+                    if (spikeHigh > token.ath_mcap * 1.5) {
+                        console.log(`[ALERT] ${token.token_address.slice(0,8)}... jumped ${(spikeHigh/token.ath_mcap).toFixed(2)}x!`);
+                    }
+                }
+            } catch (e) {
+                console.error(`[ActiveTracker] Error tracking ${token.token_address.slice(0,8)}: ${e.message}`);
+            }
+        }
+    } catch (err) {
+        console.error('[ActiveTracker] Error:', err.message);
+    }
+};
+
+setInterval(trackActiveGems, 30000);
+console.log("Active Tracker Job Scheduled (runs every 30 seconds).");

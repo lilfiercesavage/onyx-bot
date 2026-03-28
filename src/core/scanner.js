@@ -87,7 +87,10 @@ const scanForGems = async () => {
                 summary
             });
 
-            await tokenDb.markTokenCalled(gem.baseToken.address, gem.pairAddress, gem.signalScore, gem.fdv);
+            await tokenDb.markTokenCalled(gem.baseToken.address, gem.pairAddress, gem.signalScore, gem.fdv, gem.supply || 0);
+            await tokenDb.addToActiveTracking(gem.baseToken.address, gem.pairAddress, gem.signalScore, gem.fdv, gem.supply || 0);
+            
+            console.log(`[GEM FOUND] ${gem.baseToken.symbol} - Added to active tracking for spike monitoring`);
         }
     }
 
