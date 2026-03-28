@@ -185,6 +185,29 @@ header h1 {
     background: linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,107,53,0.1));
 }
 
+.hall-of-fame-link {
+    margin-bottom: 20px;
+}
+
+.btn-hof {
+    display: block;
+    background: linear-gradient(135deg, rgba(255,215,0,0.2), rgba(255,107,53,0.1));
+    border: 1px solid rgba(255,215,0,0.3);
+    color: var(--accent-gold);
+    padding: 16px;
+    border-radius: 12px;
+    text-align: center;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 16px;
+    transition: transform 0.1s, background 0.2s;
+}
+
+.btn-hof:active {
+    transform: scale(0.98);
+    background: linear-gradient(135deg, rgba(255,215,0,0.3), rgba(255,107,53,0.2));
+}
+
 .lb-stats {
     display: flex;
     gap: 12px;

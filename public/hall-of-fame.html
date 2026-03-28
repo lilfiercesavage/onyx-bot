@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Hall of Fame - Alpha Terminal</title>
+    <script src="https://cdn.jsdelivr.net/npm/@telegram-apps/sdk@2"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>⭐ Hall of Fame</h1>
+            <p class="subtitle">5x+ Gem Masters</p>
+        </header>
+
+        <div class="gems-section">
+            <div id="hallOfFameList" class="leaderboard-list">
+                <div class="loading">Loading hall of fame...</div>
+            </div>
+        </div>
+
+        <div class="actions">
+            <a href="/" class="btn-primary" style="text-align:center;text-decoration:none;display:block;">← Back to Terminal</a>
+            <button class="btn-secondary" id="refreshBtn">🔄 Refresh</button>
+        </div>
+
+        <footer>
+            <p>Only tokens that achieved 5x+ from initial market cap</p>
+        </footer>
+    </div>
+
+    <script src="hall-of-fame.js"></script>
+</body>
+</html>
