@@ -224,6 +224,8 @@ app.get('/terminal', (req, res) => {
 
 app.listen(PORT, () => {
     console.log(`Alpha Terminal running on port ${PORT}`);
+}).on('error', (err) => {
+    console.error('Server error:', err.message);
 });
 
 (async () => {
