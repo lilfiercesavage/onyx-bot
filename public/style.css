@@ -157,6 +157,12 @@ header h1 {
     gap: 6px;
 }
 
+.lb-age {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+}
+
 .multiplier-high { color: var(--accent-green); }
 .multiplier-mid { color: var(--accent-gold); }
 .multiplier-low { color: var(--accent-red); }

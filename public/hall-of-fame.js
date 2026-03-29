@@ -40,6 +40,7 @@ const loadHallOfFame = async () => {
                             <span class="${multiplierColor}">${token.multiplier.toFixed(2)}x</span>
                             🌟
                         </div>
+                        <div class="lb-age">${token.age || 'Unknown'}</div>
                     </div>
                     <div class="lb-stats">
                         <div class="lb-stat">

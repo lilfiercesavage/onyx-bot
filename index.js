@@ -100,13 +100,26 @@ app.get('/api/leaderboard', async (req, res) => {
             const initialMcap = token.initial_mcap || 0;
             const multiplier = initialMcap > 0 && athMcap > initialMcap ? athMcap / initialMcap : 1;
             
+            const calledDate = new Date(token.created_at);
+            const now = new Date();
+            const ageMs = now - calledDate;
+            const ageHours = Math.floor(ageMs / (1000 * 60 * 60));
+            const ageDays = Math.floor(ageHours / 24);
+            
+            let ageStr = ageHours < 1 ? '<1h ago' : 
+                        ageHours < 24 ? `${ageHours}h ago` : 
+                        `${ageDays}d ago`;
+            
             return {
                 address: token.token_address,
                 initialMcap: initialMcap,
                 athMcap: athMcap,
                 multiplier: multiplier,
                 signalScore: token.signal_score,
-                calledAt: token.created_at
+                calledAt: token.created_at,
+                calledAtFormatted: calledDate.toLocaleString(),
+                age: ageStr,
+                ageHours: ageHours
             };
         }).sort((a, b) => {
             if (b.multiplier !== a.multiplier) return b.multiplier - a.multiplier;
@@ -150,13 +163,26 @@ app.get('/api/hall-of-fame', async (req, res) => {
             const initialMcap = token.initial_mcap || 0;
             const multiplier = initialMcap > 0 ? athMcap / initialMcap : 0;
             
+            const calledDate = new Date(token.created_at);
+            const now = new Date();
+            const ageMs = now - calledDate;
+            const ageHours = Math.floor(ageMs / (1000 * 60 * 60));
+            const ageDays = Math.floor(ageHours / 24);
+            
+            let ageStr = ageHours < 1 ? '<1h ago' : 
+                        ageHours < 24 ? `${ageHours}h ago` : 
+                        `${ageDays}d ago`;
+            
             return {
                 address: token.token_address,
                 initialMcap: initialMcap,
                 athMcap: athMcap,
                 multiplier: multiplier,
                 signalScore: token.signal_score,
-                calledAt: token.created_at
+                calledAt: token.created_at,
+                calledAtFormatted: calledDate.toLocaleString(),
+                age: ageStr,
+                ageHours: ageHours
             };
         }).sort((a, b) => {
             if (b.multiplier !== a.multiplier) return b.multiplier - a.multiplier;
