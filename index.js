@@ -79,6 +79,7 @@ app.get('/api/leaderboard', async (req, res) => {
         }
 
         const addresses = calledTokens.map(t => t.token_address).join(',');
+        let tokenMeta = {};
         
         try {
             const response = await axios.get(`https://api.dexscreener.com/latest/dex/tokens/${addresses}`);
@@ -87,6 +88,11 @@ app.get('/api/leaderboard', async (req, res) => {
                     const addr = pair.baseToken.address.toLowerCase();
                     const currentMcap = pair.fdv || 0;
                     await dbTokens.updateAthMcap(addr, currentMcap);
+                    tokenMeta[addr] = {
+                        symbol: pair.baseToken.symbol,
+                        name: pair.baseToken.name,
+                        priceChange: pair.priceChange?.h1 || 0
+                    };
                 }
             }
         } catch (e) {
@@ -110,8 +116,13 @@ app.get('/api/leaderboard', async (req, res) => {
                         ageHours < 24 ? `${ageHours}h ago` : 
                         `${ageDays}d ago`;
             
+            const meta = tokenMeta[token.token_address.toLowerCase()] || {};
+            
             return {
                 address: token.token_address,
+                symbol: meta.symbol || 'Unknown',
+                name: meta.name || '',
+                priceChange: meta.priceChange || 0,
                 initialMcap: initialMcap,
                 athMcap: athMcap,
                 multiplier: multiplier,
@@ -142,6 +153,7 @@ app.get('/api/hall-of-fame', async (req, res) => {
         }
 
         const addresses = calledTokens.map(t => t.token_address).join(',');
+        let tokenMeta = {};
         
         try {
             const response = await axios.get(`https://api.dexscreener.com/latest/dex/tokens/${addresses}`);
@@ -150,6 +162,11 @@ app.get('/api/hall-of-fame', async (req, res) => {
                     const addr = pair.baseToken.address.toLowerCase();
                     const currentMcap = pair.fdv || 0;
                     await dbTokens.updateAthMcap(addr, currentMcap);
+                    tokenMeta[addr] = {
+                        symbol: pair.baseToken.symbol,
+                        name: pair.baseToken.name,
+                        priceChange: pair.priceChange?.h1 || 0
+                    };
                 }
             }
         } catch (e) {
@@ -173,8 +190,13 @@ app.get('/api/hall-of-fame', async (req, res) => {
                         ageHours < 24 ? `${ageHours}h ago` : 
                         `${ageDays}d ago`;
             
+            const meta = tokenMeta[token.token_address.toLowerCase()] || {};
+            
             return {
                 address: token.token_address,
+                symbol: meta.symbol || 'Unknown',
+                name: meta.name || '',
+                priceChange: meta.priceChange || 0,
                 initialMcap: initialMcap,
                 athMcap: athMcap,
                 multiplier: multiplier,

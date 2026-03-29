@@ -14,6 +14,16 @@ const formatNumber = (num) => {
     return '$' + (num || 0).toFixed(0);
 };
 
+const copyToClipboard = async (text) => {
+    try {
+        await navigator.clipboard.writeText(text);
+        if (tg) tg.HapticFeedback.notificationOccurred('success');
+        alert('Address copied!');
+    } catch (err) {
+        if (tg) tg.HapticFeedback.notificationOccurred('error');
+    }
+};
+
 const loadLeaderboard = async () => {
     const leaderboardList = document.getElementById('leaderboardList');
 
@@ -35,10 +45,15 @@ const loadLeaderboard = async () => {
                 <div class="leaderboard-item ${isTop ? 'top-gold' : ''}">
                     <div class="lb-rank">${emoji}</div>
                     <div class="lb-info">
-                        <div class="lb-address">${token.address.slice(0, 6)}...${token.address.slice(-4)}</div>
+                        <div class="lb-token">
+                            <span class="lb-symbol">${token.symbol || 'Unknown'}</span>
+                            <span class="lb-name">${token.name || ''}</span>
+                        </div>
+                        <div class="lb-address" onclick="copyToClipboard('${token.address}')" title="Click to copy">${token.address.slice(0, 4)}...${token.address.slice(-4)} 📋</div>
                         <div class="lb-multiplier">
                             <span class="${multiplierColor}">${token.multiplier.toFixed(2)}x</span>
                             🚀
+                            ${token.priceChange ? `<span class="price-change ${token.priceChange >= 0 ? 'positive' : 'negative'}">${token.priceChange >= 0 ? '+' : ''}${token.priceChange.toFixed(1)}%</span>` : ''}
                         </div>
                         <div class="lb-age">${token.age || 'Unknown'}</div>
                     </div>
@@ -81,7 +96,11 @@ const loadHallOfFame = async () => {
                 <div class="leaderboard-item hall-of-fame-item ${isTop ? 'top-gold' : ''}">
                     <div class="lb-rank">${emoji}</div>
                     <div class="lb-info">
-                        <div class="lb-address">${token.address.slice(0, 6)}...${token.address.slice(-4)}</div>
+                        <div class="lb-token">
+                            <span class="lb-symbol">${token.symbol || 'Unknown'}</span>
+                            <span class="lb-name">${token.name || ''}</span>
+                        </div>
+                        <div class="lb-address" onclick="copyToClipboard('${token.address}')" title="Click to copy">${token.address.slice(0, 4)}...${token.address.slice(-4)} 📋</div>
                         <div class="lb-multiplier">
                             <span class="${multiplierColor}">${token.multiplier.toFixed(2)}x</span>
                             🌟

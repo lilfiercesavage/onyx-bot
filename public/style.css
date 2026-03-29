@@ -163,6 +163,56 @@ header h1 {
     margin-top: 2px;
 }
 
+.lb-token {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.lb-symbol {
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--text-primary);
+}
+
+.lb-name {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.lb-address {
+    font-family: monospace;
+    font-size: 12px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: background 0.2s;
+    display: inline-block;
+}
+
+.lb-address:hover {
+    background: rgba(255,255,255,0.1);
+    color: var(--text-primary);
+}
+
+.price-change {
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: 4px;
+}
+
+.price-change.positive {
+    color: var(--accent-green);
+    background: rgba(0,212,170,0.1);
+}
+
+.price-change.negative {
+    color: var(--accent-red);
+    background: rgba(255,71,87,0.1);
+}
+
 .multiplier-high { color: var(--accent-green); }
 .multiplier-mid { color: var(--accent-gold); }
 .multiplier-low { color: var(--accent-red); }
