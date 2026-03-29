@@ -2,7 +2,7 @@ services:
   - type: web
     name: onyx-bot
     env: node
-    buildCommand: npm install
+    buildCommand: npm install --prefer-offline
     startCommand: node index.js
     envVars:
       - key: TELEGRAM_BOT_TOKEN
@@ -11,4 +11,6 @@ services:
         sync: false
       - key: PORT
         value: 3000
+      - key: NODE_ENV
+        value: production
     autoDeploy: true
